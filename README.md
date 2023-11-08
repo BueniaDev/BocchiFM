@@ -1,2 +1,2 @@
-# BocchiOPM
-Cycle-accurate YM2151 emulator, kinda
+# BocchiYM
+Cycle-accurate Yamaha FM sound chip emulators, kinda
