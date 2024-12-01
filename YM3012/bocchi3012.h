@@ -1,6 +1,6 @@
 /*
     This file is part of the BocchiYM family of cycle-accurate Yamaha FM sound chip emulators.
-    Copyright (C) 2023 BueniaDev.
+    Copyright (C) 2024 BueniaDev.
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -54,6 +54,12 @@ namespace bocchi3012
 	    }
 
 	private:
+	    template<typename T>
+	    bool testbit(T reg, int bit)
+	    {
+		return ((reg >> bit) & 0x1) ? true : false;
+	    }
+
 	    Bocchi3012Pins current_pins;
 
 	    int64_t sample_divider = 0;
@@ -68,10 +74,19 @@ namespace bocchi3012
 
 	    uint16_t reg_sr = 0;
 
+	    uint16_t left_sr = 0;
+	    uint16_t right_sr = 0;
+
+	    uint16_t left_latch = 0;
+	    uint16_t right_latch = 0;
+
 	    bool prev_clk = false;
 	    bool prev_res = true;
 
 	    bool clk_rise = false;
+
+	    bool sh1_val = false;
+	    bool sh2_val = false;
 
 	    bool prev_sy = true;
 	    bool prev_sh1 = false;
@@ -87,4 +102,4 @@ namespace bocchi3012
 
 
 
-#endif // BOCCHIDAC_YM3012_H
+#endif // BOCCHI3012_H

@@ -1,6 +1,6 @@
 /*
     This file is part of the BocchiYM family of cycle-accurate Yamaha FM sound chip emulators.
-    Copyright (C) 2023 BueniaDev.
+    Copyright (C) 2024 BueniaDev.
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -78,6 +78,8 @@ namespace bocchi3012
 	clk_rise = (!prev_clk && clk);
 	if (!current_pins.pin_nicl)
 	{
+	    // left_sr = 0;
+	    // right_sr = 0;
 	    reg_sr = 0;
 	    prev_sh1 = false;
 	    prev_sh2 = false;
@@ -95,38 +97,59 @@ namespace bocchi3012
 
     void Bocchi3012::tickInternal()
     {
+	if (!prev_sy && current_pins.pin_sy)
+	{
+	    left_sr = ((left_sr >> 1) | (current_pins.pin_so << 13));
+	    right_sr = ((right_sr >> 1) | (current_pins.pin_so << 13));
+	}
+
+	if (!prev_sy && current_pins.pin_sy)
+	{
+	    sh1_val = current_pins.pin_sh1;
+	    sh2_val = current_pins.pin_sh2;
+	}
+
 	if (prev_sy && !current_pins.pin_sy)
 	{
-	    if (prev_sh1 && !current_pins.pin_sh1)
-	    {
-		output[1] = calcSample(reg_sr);
-	    }
+	    prev_sh1 = sh1_val;
+	    prev_sh2 = sh2_val;
+	}
 
-	    if (prev_sh2 && !current_pins.pin_sh2)
-	    {
-		output[0] = calcSample(reg_sr);
-	    }
+	if (prev_sh1 && !sh1_val)
+	{
+	    right_latch = (right_sr & 0x1FFF);
+	}
 
-	    reg_sr = ((reg_sr >> 1) | (current_pins.pin_so << 12));
-
-	    prev_sh1 = current_pins.pin_sh1;
-	    prev_sh2 = current_pins.pin_sh2;
+	if (prev_sh2 && !sh2_val)
+	{
+	    left_latch = (left_sr & 0x1FFF);
 	}
 
 	prev_sy = current_pins.pin_sy;
+
+	output[0] = calcSample(left_latch);
+	output[1] = calcSample(right_latch);
     }
 
     int16_t Bocchi3012::calcSample(uint16_t latch)
     {
 	int exp = ((latch >> 10) & 0x7);
-	int mant = ((latch & 0x3FF) - 512);
+	bool sign = testbit(latch, 9);
+	uint16_t mant = (latch & 0x1FF);
+	uint16_t mask = 0;
 
 	if (exp == 0)
 	{
 	    return 0;
 	}
 
-	return ((mant << exp) >> 1);
+	if (!sign)
+	{
+	    mask = 0xFFFF;
+	}
+
+	mant ^= (mask & 0x1FF);
+	return (((mant << exp) >> 1) ^ mask);
     }
 
     void Bocchi3012::tickValidSample()
